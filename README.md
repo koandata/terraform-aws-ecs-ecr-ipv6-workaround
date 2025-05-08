@@ -1,5 +1,7 @@
 This terraform module works around the ECR issue with ECS when it doesn't use an IAM role due to a new repository scheme.
 
+It's only useful until <https://github.com/aws/containers-roadmap/issues/2611> gets fixed.
+
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
 
