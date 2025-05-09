@@ -2,6 +2,12 @@
 data "aws_caller_identity" "current" {}
 data "aws_region" "current" {}
 
+resource "aws_cloudwatch_log_group" "ecs" {
+  name = "/ecs/example-name"
+
+  retention_in_days = 7
+}
+
 resource "aws_ecr_repository" "main" {
   name = "example-repo"
 }
@@ -50,6 +56,46 @@ resource "aws_iam_role_policy" "secret_read" {
   })
 }
 
+// since log sending now happens inside containers we need a task role
+// with Cloudwatch Logs access
+resource "aws_iam_role" "task_role" {
+  name = "example-task-role"
+
+  assume_role_policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = "sts:AssumeRole"
+        Principal = {
+          Service = "ecs-tasks.amazonaws.com"
+        }
+        Effect = "Allow"
+        Sid    = ""
+      },
+    ]
+  })
+}
+
+resource "aws_iam_role_policy" "logs_write" {
+  role = aws_iam_role.task_role.name
+  name = "logs"
+
+  policy = jsonencode({
+    Version = "2012-10-17"
+    Statement = [
+      {
+        Action = [
+          "logs:CreateLogStream",
+          "logs:PutLogEvents",
+          "logs:DescribeLogStreams"
+        ]
+        Resource = "${aws_cloudwatch_log_group.ecs.arn}:*"
+        Effect   = "Allow"
+      },
+    ]
+  })
+}
+
 resource "aws_ecs_task_definition" "service" {
   family                   = "example-task-definition"
   requires_compatibilities = ["EC2", "FARGATE"]
@@ -58,6 +104,7 @@ resource "aws_ecs_task_definition" "service" {
   memory                   = 1024
 
   execution_role_arn = aws_iam_role.execution_role.arn
+  task_role_arn      = aws_iam_role.task_role.arn
   container_definitions = jsonencode([
     {
       name = "app"
@@ -76,6 +123,35 @@ resource "aws_ecs_task_definition" "service" {
           hostPort      = 8000
         }
       ]
+      // this will use awsfirelens
+      logConfiguration = {
+        logDriver = "awsfirelens"
+        options = {
+          Name           = "cloudwatch"
+          region         = data.aws_region.current.name,
+          log_group_name = aws_cloudwatch_log_group.ecs.name
+          // the key thing is to use the ipv6 endpoint as per the documentation
+          endpoint          = "https://logs.${data.aws_region.current.name}.api.aws"
+          auto_create_group = "false"
+          log_key           = "log"
+          log_stream_prefix = "app"
+        }
+      }
+      dependsOn = [
+        {
+          containerName = "logs"
+          condition     = "START"
+        }
+      ]
+    },
+    {
+      name      = "logs"
+      essential = true
+      image     = "ecr-public.aws.com/aws-observability/aws-for-fluent-bit:stable"
+
+      firelensConfiguration = {
+        type = "fluentbit"
+      }
     }
   ])
 }
