@@ -39,7 +39,8 @@ No modules.
 
 | Name | Description | Type | Default | Required |
 |------|-------------|------|---------|:--------:|
-| <a name="input_ecr_repo_arn"></a> [ecr\_repo\_arn](#input\_ecr\_repo\_arn) | arn of the ecr repo | `string` | n/a | yes |
+| <a name="input_ecr_repo_arn"></a> [ecr\_repo\_arn](#input\_ecr\_repo\_arn) | Arn of the ecr repo | `string` | `""` | no |
+| <a name="input_ecr_repo_arns"></a> [ecr\_repo\_arns](#input\_ecr\_repo\_arns) | Arns of the ecr repos we want to have access to | `list` | `[]` | no |
 | <a name="input_name_prefix"></a> [name\_prefix](#input\_name\_prefix) | Name prefix to use for resources | `string` | `"ecs-ecr-ipv6-workaround-"` | no |
 
 ## Outputs

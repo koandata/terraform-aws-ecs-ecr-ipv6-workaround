@@ -22,24 +22,19 @@ resource "aws_iam_role" "lambda" {
   })
 }
 
+locals {
+  ecr_repo_arns = compact(concat([var.ecr_repo_arn], var.ecr_repo_arns))
+}
+
 resource "aws_iam_role_policy" "ecr" {
   role = aws_iam_role.lambda.name
 
   policy = jsonencode({
     Version = "2012-10-17"
-    Statement = [
+    Statement = concat([
       {
         Action   = "ecr:GetAuthorizationToken"
         Resource = "*"
-        Effect   = "Allow"
-      },
-      {
-        Action = [
-          "ecr:BatchCheckLayerAvailability",
-          "ecr:GetDownloadUrlForLayer",
-          "ecr:BatchGetImage",
-        ]
-        Resource = var.ecr_repo_arn
         Effect   = "Allow"
       },
       {
@@ -47,7 +42,17 @@ resource "aws_iam_role_policy" "ecr" {
         Resource = aws_secretsmanager_secret.ecr.arn
         Effect   = "Allow"
       },
-    ]
+      ],
+      [for repo_arn in local.ecr_repo_arns: {
+        Action = [
+          "ecr:BatchCheckLayerAvailability",
+          "ecr:GetDownloadUrlForLayer",
+          "ecr:BatchGetImage",
+        ]
+        Resource = repo_arn
+        Effect   = "Allow"
+      }
+      ])
   })
 }
 
