@@ -43,7 +43,7 @@ resource "aws_iam_role_policy" "ecr" {
         Effect   = "Allow"
       },
       ],
-      [for repo_arn in local.ecr_repo_arns: {
+      [for repo_arn in local.ecr_repo_arns : {
         Action = [
           "ecr:BatchCheckLayerAvailability",
           "ecr:GetDownloadUrlForLayer",
@@ -51,8 +51,8 @@ resource "aws_iam_role_policy" "ecr" {
         ]
         Resource = repo_arn
         Effect   = "Allow"
-      }
-      ])
+        }
+    ])
   })
 }
 
@@ -99,7 +99,7 @@ resource "aws_lambda_invocation" "oneoff" {
 
 // the token should be valid for 12 hours, let's run the Lambda every 11 hours
 resource "aws_cloudwatch_event_rule" "every_11_hours" {
-  name                = "${var.name_prefix}every-11-hours"
+  name                = "${var.name_prefix}${random_pet.random.id}-every-11-hours"
   schedule_expression = "cron(0 */11 * * ? *)"
 }
 
