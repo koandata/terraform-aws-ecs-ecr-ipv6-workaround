@@ -3,7 +3,7 @@ This terraform module works around the ECR issue with ECS when it doesn't use an
 It's only useful until <https://github.com/aws/containers-roadmap/issues/2611> gets fixed.
 
 The output cloudfront_domain_name contains the name for the ECR Proxy as AWS broke direct access to the new IPv6-enabled endpoint - <https://github.com/aws/containers-roadmap/issues/1340#issuecomment-3177231396>
-Use it in your task definition as `"${module.ecr_workaround.cloudfront_domain_name}/{your_repo}:{your_tag}"` instead of `{account_id}.dkr-ecr.ap-southeast-2.on.aws/{your_repo}:{your_tag}`.
+Use it in your task definition as `"${module.ecr_workaround.ecr_proxy_domain}/{your_repo}:{your_tag}"` instead of `{account_id}.dkr-ecr.ap-southeast-2.on.aws/{your_repo}:{your_tag}`.
 
 <!-- BEGIN_TF_DOCS -->
 ## Requirements
